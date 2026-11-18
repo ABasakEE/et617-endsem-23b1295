@@ -10,7 +10,15 @@ const SAVE = 'nt_v1'
 const demo = new URLSearchParams(location.search).get('demo') // harder | alt | prereq
 const LAW_TITLE = { 1: 'Law 1: Inertia', 2: 'Law 2: F = ma', 3: 'Law 3: Action and reaction' }
 const CHIP = { HARDER: ['Harder task', 'harder'], ALT: ['Different explanation', 'alt'], PREREQ: ['Prerequisite lesson', 'prereq'], NEXT: ['Next task', 'next'] }
-const LAW_SUB = { 1: 'Why things keep moving', 2: 'How force, mass and acceleration connect', 3: 'Pairs of forces between two bodies' }
+const CONCEPT = {
+  1: ['An object keeps doing what it is already doing, staying at rest or moving in a straight line at steady speed, unless a net force acts on it. "Net" means all the forces added up.',
+    'Balanced forces add up to zero, so they change nothing. Friction is also a force. That is why things slow down on a rough floor but glide on frictionless ice.'],
+  2: ['The net force on an object equals its mass times its acceleration: F = ma. The same push gives a lighter object more acceleration.',
+    'A constant net force gives a constant acceleration, so the speed keeps changing steadily. In free fall, weight (mass × 10) and mass grow together, so every object accelerates at 10 m/s².'],
+  3: ['When one body pushes on another, the second pushes back on the first with an equal force in the opposite direction.',
+    'The two forces act on different bodies, so they never cancel each other. Each body still accelerates by a = F/m, so the lighter body moves more.'],
+}
+const LAW_SUB ={ 1: 'Why things keep moving', 2: 'How force, mass and acceleration connect', 3: 'Pairs of forces between two bodies' }
 
 const load = () => { try { return JSON.parse(localStorage.getItem(SAVE)) } catch { return null } }
 const store = (v) => { try { v ? localStorage.setItem(SAVE, JSON.stringify(v)) : localStorage.removeItem(SAVE) } catch { /* private mode: resume just won't work */ } }
@@ -36,6 +44,7 @@ export default function App() {
   const [result, setResult] = useState(null)
   const [run, setRun] = useState(0)
   const [busy, setBusy] = useState(false)
+  const [pending, setPending] = useState(1)
   const [watched, setWatched] = useState(false) // predict-then-watch: verdict and answer stay hidden until the animation has played
   const [degraded, setDegraded] = useState(false)
   const pre = useRef(null) // prefetched next Phase A item, generated while the learner watches the animation
@@ -71,7 +80,7 @@ export default function App() {
     setSt(step.kind === 'A' ? { ...c, seen: [...(c.seen || []), E.sigOf(it.params)] } : c); setItem(it); setAtt(0); setAns(''); setReason(''); setHint(''); setResult(null); setView('item')
   }
 
-  const start = (law) => go(E.newState(law, demo))
+  const start = (law) => { setPending(law); setView('concept') } // D3: every learner sees the concept first
   const resume = () => { setSt(saved.st); if (saved.item) { setItem(saved.item); setAtt(0); setAns(''); setReason(''); setHint(''); setView('item') } else go(saved.st) }
 
   async function submit() {
@@ -134,6 +143,13 @@ export default function App() {
       <button key={l} className="law" style={{ '--d': `${l * 70}ms` }} onClick={() => start(l)}>
         <span className="num">{l}</span><span><b>{LAW_TITLE[l]}</b><small>{LAW_SUB[l]}</small></span><span className="go" aria-hidden="true">→</span>
       </button>))}</div></section>)
+
+  if (view === 'concept') return wrap(<section>
+    <span className="tag">Quick concept · 30 seconds</span>
+    <h2>{LAW_TITLE[pending]}</h2>
+    {CONCEPT[pending].map((t) => <p key={t}>{t}</p>)}
+    <p className="note blue">Next you will predict what happens, then watch. A wrong prediction is useful: it shows us the trap to fix.</p>
+    <div className="row"><button className="btn primary" onClick={() => go(E.newState(pending, demo))}>Start my 10 minutes</button><button className="btn ghost" onClick={() => setView('home')}>Back</button></div></section>)
 
   if (view === 'loading') return wrap(<div className="loading" role="status"><i /><i /><i /><span>Getting your next question</span></div>)
 

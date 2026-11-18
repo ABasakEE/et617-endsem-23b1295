@@ -47,3 +47,9 @@ Clock note: ~45 min left at the start of the build block. Priority = generated q
 - `MotionCanvas.jsx` rewritten: stroboscopic ghost marks (equal gaps = constant speed, growing gaps = acceleration), live velocity arrow, force/friction/weight arrows, skater figures, Replay + Slow motion buttons, per-kind caption, reduced-motion shows the end state.
 - Verified with headless Chrome at 390 px and 1000 px: home, item, hint, result (3 laws), Phase B tricky, done, recap, resume. No console errors. Screenshots were taken offline mode (`?offline=1`).
 - Not verified: real AI-generated items in the browser (live site), touch gestures on a real phone.
+
+## Live test findings and fixes
+- Live browser test (real AI): hint instant, AI hint swapped in, next AI item ready in ~0.9 s (prefetch works), no console errors.
+- FOUND: AI hint stated the answer ("gravity pulls all objects with the same acceleration"). FIX: `/api/feedback` prompt now asks for one question only and the server keeps just the question sentence (502 → canned hint if none). `/api/grade` keeps only the question sentence on a miss.
+- FOUND: AI story named different objects than the facts line. FIX: story no longer displayed; the facts line (built from validated params) is the only scenario text. AI still chooses the scenario numbers, hints, grading.
+- Remaining softness: guiding questions can still lean toward the answer; no way to guarantee otherwise with an LLM.

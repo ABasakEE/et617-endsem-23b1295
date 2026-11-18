@@ -187,7 +187,7 @@ export default function App() {
   const ready = item.format === 'choice' ? !!ans : item.format === 'choice+reason' ? ans && reason.trim().length > 2 : ans.trim().length > 0
   return wrap(<section>{bar}
     <span className={`tag ${isA ? '' : item.kind}`}>{isA ? 'Concept practice · predict first, then watch' : `Exam check · ${item.kind === 'tricky' ? 'exam-favourite tricky question' : 'standard question'}`}</span>
-    {isA && <p className="facts"><b>{item.facts}</b> {item.story}</p>}
+    {isA && <p className="facts"><b>{item.facts}</b></p>}
     <p className="qtext">{q(item)}</p>
     {hint && <p className="note blue">Hint: {hint} Try again.</p>}
     {(item.format === 'choice' || item.format === 'choice+reason') && choices}
@@ -195,6 +195,6 @@ export default function App() {
     {item.format === 'explain' && <textarea className="field" value={ans} onChange={(e) => setAns(e.target.value)} rows={3} placeholder="Write your reasoning…" />}
     {item.format === 'choice+reason' && <><p>{item.reasonPrompt}</p><textarea className="field" value={reason} onChange={(e) => setReason(e.target.value)} rows={2} /></>}
     <div className="row"><button className="btn primary" disabled={!ready || busy} onClick={submit}>{busy ? 'Checking…' : 'Submit'}</button>{stop}</div>
-    {isA && <small className="src">{item.source === 'ai' ? 'AI-written scenario' : 'Built-in scenario'}</small>}
+    {isA && <small className="src">{item.source === 'ai' ? 'Scenario chosen by AI for your weak spot' : 'Built-in scenario'}</small>}
   </section>)
 }

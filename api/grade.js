@@ -47,6 +47,8 @@ Return JSON only: {"correct": true|false, "tag": string|null, "feedback": "..."}
     let feedback = out.feedback.trim()
     const leak = new Set(rubric.keyPoints.flatMap((k) => grams(k)))
     if (grams(feedback).some((g) => leak.has(g))) feedback = FALLBACK
+    // A miss gets only a guiding question; statements are where answers leak.
+    if (!out.correct) feedback = (feedback.match(/[^.!?]*\?/g) || []).pop()?.trim() || FALLBACK
     return res.status(200).json({ correct: out.correct, tag, feedback })
   } catch {
     return res.status(502).json({ error: 'ai_unavailable' })

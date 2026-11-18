@@ -3,13 +3,9 @@
 **Card:** P4 Adaptive tutor · T6 Newton's laws (Cl. 9) · L5 Repeating learner · C4 10-minute sessions
 
 ## 0. Exam card (Arjoe Basak, roll 23B1295)
-| Field | Value | Card text |
-|---|---|---|
-| P – Problem | P4 | Adaptive tutor with automatic question generation: generate questions from the learner's performance, misconceptions and previous responses; at least three question formats; evaluate learner explanations; diagnose misconceptions; adjust difficulty or nature of the next task. Design challenge: state the decision rule for a harder question, an alternative explanation or prerequisite instruction, and show each of the three outcomes. |
-| T – Topic | T6 | Newton's laws: force and motion (Cl. 9) |
-| L – Learner context | L5 | Learner repeating the topic after failing it once, high anxiety and low self-efficacy |
-| C – Design constraint | C4 | 10-minute sessions: one complete learning sequence fits in 10 minutes; the learner can stop and resume where they left off |
-| ID – Identity token | 23B1295 | Shown in the footer of every screen and on the About screen |
+| P – Problem statement | T – Topic | L – Learner context | C – Design constraint | ID – Identity token |
+|---|---|---|---|---|
+| P4 Adaptive tutor with automatic question generation | T6 Newton's laws: force and motion (Cl. 9) | L5 Learner repeating the topic after failing it once, high anxiety and low self-efficacy | C4 10-minute sessions (one complete sequence fits in 10 minutes; the learner can stop and resume) | 23B1295 |
 
 ## 1. Problem
 Learners who have already failed a topic usually know the definitions but still fall for the classic wrong ideas

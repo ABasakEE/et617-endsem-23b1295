@@ -28,9 +28,14 @@ Two phases:
 - **Phase B — Standard package (fixed, identical for all).** 3 standard + 2 exam-favourite "tricky" items per law (15 in total). Gives a comparable, exam-like checkpoint. A missed tricky item returns the learner to Phase A for that tag.
 Phase B is also where explanation grading happens for free-text items.
 
-**Formats (≥3 required):** (1) predict-then-watch choice (generated), (2) numeric answer, (3) free-text explanation (AI-graded against a rubric), (4) tricky choice + one-line reason.
+**Formats (≥3 required) — Phase A generates in three of them:** (1) predict-then-watch choice, (2) numeric answer (e.g. speed after 4 s), (3) free-text explanation graded against a rubric. Phase B (fixed) uses numeric, explanation and choice + one-line reason.
 
-**Generation rule (keeps physics correct):** the LLM only chooses a scenario `{mass, force, friction, v0}` within validated ranges for a target tag and writes the wording. The correct outcome is computed by the `MotionCanvas` simulator, never by the LLM. If generation fails, a deterministic template generator picks the parameters.
+**Generation rule (keeps physics correct):** the LLM only chooses scenario parameters within validated ranges for a target tag and format and writes the scenario wording. Scenario kinds: `push {mass, force, friction, v0}`, `fall {m1, m2}`, `pair {m1, m2, force}`. The correct outcome and numeric answer are computed by the simulator (`src/sim.js`), never by the LLM. Parameters are clamped client-side. If generation fails, a deterministic template generator picks the parameters.
+
+**Next-task nature rule (format adapts, not only difficulty):**
+- Correct first-try *choice* on a tag with no explanation yet → next item is an **explain** item (guard against guessing).
+- `streak ≥ 2` (HARDER) → next item is **numeric**.
+- Wrong choice → hint, retry; failed item → animation reveal, then a fresh **choice** item on the same tag (ALT) or after the prerequisite lesson (PREREQ).
 
 **Hint ladder (never reveals the gold answer):** nudge → pointed question → show the animation. For hints the server sends the LLM the question, the wrong answer and the tag but **not** the correct answer. For explanation grading the rubric is sent, and the output is post-filtered for leaks.
 
@@ -77,7 +82,8 @@ Rules for this learner (L5): never raise difficulty immediately after a miss; wr
   2. `/api/feedback`: writes a hint or explanation for a wrong answer, **without** being given the correct answer.
   3. `/api/grade`: grades free-text explanations against a rubric and returns `{correct, tag|null, feedback}`. A tag outside the allowed list is discarded.
 - Learner text is delimited as data in every prompt.
-- **If any call fails, times out (6 s), or is rate-limited:** template generator, canned hints and a keyword rubric take over, and a small "offline mode" badge appears. Choice/numeric items never need AI to be graded.
+- **Latency (measured 1–10 s on free tier, model `gemini-3.5-flash-lite`, `thinkingLevel: minimal`):** the next Phase A item is requested the moment the learner submits an answer, so it generates while they watch the animation and read feedback. Timeouts: generate 12 s, feedback 8 s, grade 10 s. Canned per-tag hints are shown instantly; AI hints replace them if they arrive in time.
+- **If any call fails, times out, or is rate-limited:** template generator, canned hints and a keyword rubric take over, and a small "offline mode" badge appears. Choice/numeric items never need AI to be graded.
 
 ## 9. Architecture
 Vite + React (JSX). `src/bank.js` (Phase B package, tags, micro-lessons), `src/engine.js` (pure decision rule + mastery gate + template generator, assert-based tests), `src/MotionCanvas.jsx` (simulator = source of truth for outcomes),

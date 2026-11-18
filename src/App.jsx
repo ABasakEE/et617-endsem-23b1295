@@ -36,6 +36,7 @@ export default function App() {
   const [result, setResult] = useState(null)
   const [run, setRun] = useState(0)
   const [busy, setBusy] = useState(false)
+  const [watched, setWatched] = useState(false) // predict-then-watch: verdict and answer stay hidden until the animation has played
   const [degraded, setDegraded] = useState(false)
   const pre = useRef(null) // prefetched next Phase A item, generated while the learner watches the animation
   const hintFor = useRef(null)
@@ -104,7 +105,8 @@ export default function App() {
     setSt(state)
     const step = E.nextStep(state)
     pre.current = step.kind === 'A' ? { step, promise: genItem(step, state) } : null // start generating now: hides latency
-    setResult({ correct, outcome, feedback: fb }); setRun((r) => r + 1); setView('result')
+    const predicted = item.format === 'numeric' ? `${ans} ${item.unit}` : item.format === 'choice' || item.format === 'choice+reason' ? opt?.text : ans
+    setWatched(false); setResult({ correct, outcome, feedback: fb, predicted }); setRun((r) => r + 1); setView('result')
   }
 
   const wrap = (children) => (
@@ -169,14 +171,19 @@ export default function App() {
     const [lab, cls] = CHIP[result.outcome.type]
     const tag = result.outcome.tag
     const scen = item.phase === 'A' ? item.params : tag ? E.scenarioForTag(tag) : null
+    const gated = item.phase === 'A' && !watched // Phase A: show prediction, play the animation, only then reveal
     return wrap(<section>{bar}
-      <h2 className={`res ${result.correct ? 'ok' : 'miss'}`}>{result.correct ? '✓ Correct' : 'Not quite. Watch what happens.'}</h2>
-      {result.feedback && <p>{result.feedback}</p>}
-      {(item.phase === 'A' || !result.correct) && <><p><b>Answer:</b> {reveal(item)}</p>{scen && <MotionCanvas scenario={scen} runKey={run} />}</>}
-      {!result.correct && tag && <div className="card"><b>Another way to see it</b><p>{E.ALT_EXPLAIN[tag]}</p></div>}
-      {result.outcome.type === 'PREREQ' && E.prereqFor(tag) && <div className="card amber"><b>Prerequisite: {E.prereqFor(tag).title}</b><p>{E.prereqFor(tag).text}</p></div>}
-      <p className={`decision ${cls}`}><b>Tutor decision: {lab}.</b> {result.outcome.reason}</p>
-      <div className="row"><button className="btn primary" onClick={() => go(st)}>Next</button>{stop}</div></section>)
+      <h2 className={`res ${gated ? '' : result.correct ? 'ok' : 'miss'}`}>{gated ? 'Now watch what happens' : result.correct ? '✓ Correct' : 'Not quite. Here is what happened.'}</h2>
+      {item.phase === 'A' && result.predicted && <p>You predicted: <b>{result.predicted}</b></p>}
+      {scen && (item.phase === 'A' || !result.correct) && <MotionCanvas scenario={scen} runKey={run} onDone={() => setWatched(true)} />}
+      {gated && <button className="btn ghost sm" onClick={() => setWatched(true)}>Skip animation</button>}
+      {!gated && <div className="screen">
+        {result.feedback && <p>{result.feedback}</p>}
+        {(item.phase === 'A' || !result.correct) && <p><b>What happened:</b> {reveal(item)}</p>}
+        {!result.correct && tag && <div className="card"><b>Another way to see it</b><p>{E.ALT_EXPLAIN[tag]}</p></div>}
+        {result.outcome.type === 'PREREQ' && E.prereqFor(tag) && <div className="card amber"><b>Prerequisite: {E.prereqFor(tag).title}</b><p>{E.prereqFor(tag).text}</p></div>}
+        <p className={`decision ${cls}`}><b>Tutor decision: {lab}.</b> {result.outcome.reason}</p>
+        <div className="row"><button className="btn primary" onClick={() => go(st)}>Next</button>{stop}</div></div>}</section>)
   }
 
   // item view

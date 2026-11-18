@@ -30,15 +30,15 @@ function VArrow({ x, y, len, cls, label }) { // vertical, pointing down for len 
 }
 
 // One component, three scenario kinds. Positions come from the same simulator that makes the answer keys.
-export default function MotionCanvas({ scenario: sc, runKey = 0 }) {
+export default function MotionCanvas({ scenario: sc, runKey = 0, onDone }) {
   const [t, setT] = useState(0)
   const [rk, setRk] = useState(0)
   const [slow, setSlow] = useState(false)
   useEffect(() => {
     const D = duration(sc), k = slow ? 0.5 : 1
-    if (reduced()) { setT(D); return }
+    if (reduced()) { setT(D); onDone?.(); return }
     let raf; const t0 = performance.now()
-    const tick = (now) => { const el = Math.min(((now - t0) / 1000) * k, D); setT(el); if (el < D) raf = requestAnimationFrame(tick) }
+    const tick = (now) => { const el = Math.min(((now - t0) / 1000) * k, D); setT(el); if (el < D) raf = requestAnimationFrame(tick); else onDone?.() } // onDone lets the page reveal the answer only after the watch
     setT(0); raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [JSON.stringify(sc), runKey, rk, slow])

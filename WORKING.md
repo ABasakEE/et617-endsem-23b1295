@@ -19,10 +19,11 @@ Clock note: ~45 min left at the start of the build block. Priority = generated q
 
 - `/api/generate`, `/api/feedback`, `/api/grade` written by subagent; `scripts/test-api.mjs` ALL PASS locally against real Gemini (latency 6-9 s per call). Server timeout raised to 14 s (`AI_TIMEOUT_MS` overrides), client 16 s, `vercel.json` maxDuration 30. Why: at 8 s about 1 in 3 calls timed out.
 - Pushed (commit d03ed40). Live at https://et617-23b1295.vercel.app (alias added as a project domain; the first alias was deployment-only and sat behind Vercel Authentication, now fixed).
-- Live `/api/health` currently `hasKey:false` → env vars NOT set on Vercel yet, so live AI calls fall back.
+- Env vars were set but `hasKey` stayed false: Vercel applies env vars only to NEW deployments. A push triggered a redeploy; live `/api/health` now `hasKey:true, model gemini-3.5-flash-lite`.
+- Live endpoint test passed: generate / feedback / grade all 200, ~9 s each (free-tier latency). Generate is hidden behind the animation; grading makes the learner wait ~9 s (falls back to the keyword grader past 16 s).
 
 ## Doing now
-- Waiting on user: set Vercel env vars + redeploy (steps below). Then test live end to end.
+- Browser click-through of the full session (user + me), mobile width check.
 
 ## Next
 - Live test: generate/feedback/grade through the deployed site, full session click-through in browser, mobile-width sanity.

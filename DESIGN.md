@@ -2,6 +2,15 @@
 
 **Card:** P4 Adaptive tutor · T6 Newton's laws (Cl. 9) · L5 Repeating learner · C4 10-minute sessions
 
+## 0. Exam card (Arjoe Basak, roll 23B1295)
+| Field | Value | Card text |
+|---|---|---|
+| P – Problem | P4 | Adaptive tutor with automatic question generation: generate questions from the learner's performance, misconceptions and previous responses; at least three question formats; evaluate learner explanations; diagnose misconceptions; adjust difficulty or nature of the next task. Design challenge: state the decision rule for a harder question, an alternative explanation or prerequisite instruction, and show each of the three outcomes. |
+| T – Topic | T6 | Newton's laws: force and motion (Cl. 9) |
+| L – Learner context | L5 | Learner repeating the topic after failing it once, high anxiety and low self-efficacy |
+| C – Design constraint | C4 | 10-minute sessions: one complete learning sequence fits in 10 minutes; the learner can stop and resume where they left off |
+| ID – Identity token | 23B1295 | Shown in the footer of every screen and on the About screen |
+
 ## 1. Problem
 Learners who have already failed a topic usually know the definitions but still fall for the classic wrong ideas
 ("a moving object needs a force to keep moving"). Routine practice does not expose those ideas, and
@@ -18,7 +27,7 @@ and fixes the top ones inside one 10-minute sitting per law.
 **Abhishek Tripathi, 14, Class 9.** Windows home laptop, studies in the evening after school. Today in class he could not answer
 basic questions; exam is at the end of the week. He has about 10 minutes a day for this topic, English medium.
 - *Prior knowledge:* can recite the three laws and F = ma; applies the formula by rote. [confirm]
-- *Likely misconceptions:* force is needed to keep motion going; heavier things fall faster; action and reaction cancel. 
+- *Two headline misconceptions (D2):* **M1a** a moving object needs a force to keep moving; **M3a** action and reaction cancel so nothing moves. The app also tracks four extra tags (M1b, M2a, M2b, M3b). 
 - *Affect:* anxious and low self-efficacy after failing; reacts badly to red marks and countdowns.
 - *Motivation:* not to be caught out again at the end-of-week exam.
 

@@ -10,13 +10,19 @@ Clock note: ~45 min left at the start of the build block. Priority = generated q
 - Gemini key works. `gemini-3.8-flash` timed out/503, so `GEMINI_MODEL=gemini-3.5-flash-lite` (in `.env.local` only). `gemini-2.5-flash-lite` 404s for this key.
 - DESIGN.md updated: Phase A now generates in 3 formats; format adapts via the next-task rule; latency strategy.
 
+- `src/sim.js`: simulator = answer key (push / fall / pair). Why: the LLM must never decide the physics.
+- `src/engine.js`: decision rule (HARDER / ALT / PREREQ / NEXT), mastery gate (2 first-try correct in a row per tag), next-task nature rule (correct choice → explain; streak≥2 → numeric), template generator, `normalizeParams` (repairs bad AI params), keyword grader fallback, time rule (8 min recap, 10 min end). `npm test` covers it (22 asserts-ish, passes).
+- `src/MotionCanvas.jsx`: one SVG animation component for all three scenario kinds.
+- `src/App.jsx`: session flow, C4 timer bar + Stop/Resume (localStorage), decision chip on every result, demo mode `?demo=harder|alt|prereq`, `?offline=1` forces fallbacks.
+- Latency fix: the next Phase A item is requested the moment an answer is submitted, so it generates while the learner watches the animation.
+- `/api/health` returns whether env vars are set (no values).
+
 ## Doing now
-- Subagent: `/api/generate`, `/api/feedback`, `/api/grade` (+ leak filter, test script).
-- Me: `src/sim.js` (answer key), `src/engine.js` (decision rule, generator, local grader), `MotionCanvas.jsx`, `App.jsx`, `/api/health`.
+- Subagent finishing `/api/generate`, `/api/feedback`, `/api/grade` + `scripts/test-api.mjs`.
 
 ## Next
-- Wire client to API with fallbacks; demo mode `?demo=harder|alt|prereq`, `?offline=1`.
-- Commit/push; verify Vercel env vars; test live.
+- Review/run API tests, commit + push (Vercel auto-deploys), set Vercel env vars (see below), test live end-to-end.
+- Phase B items are single-attempt (no retry loop); Phase A has hint + one retry. Known simplification.
 
 ## Notes
 - Never send persona name / user identity / roll number to Gemini (prompts hold only physics text, tag, learner answer).

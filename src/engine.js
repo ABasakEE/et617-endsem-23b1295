@@ -141,7 +141,7 @@ export function templateItem(tag, format, n = 0, seen = []) {
 }
 
 // Words to box in built-in hints, and when the AI proposes none. Longest/most specific first.
-const GLOSS = ['net force', 'different bod(?:y|ies)', 'equal', 'opposite', 'balanced', 'faster', 'accelerat\\w*', 'friction', 'weight', 'mass', 'speed', 'force']
+const GLOSS = ['net force', 'different bod(?:y|ies)', 'equal', 'opposite', 'balanced', 'faster', 'heavier', 'lighter', 'same (?:time|height|rate)', 'accelerat\\w*', 'friction', 'gravity', 'weight', 'mass', 'push(?:ing)?|pull(?:ing)?', 'speed', 'land(?:s)?', 'force']
 export function autoHighlight(text) {
   const out = []
   for (const g of GLOSS) {
@@ -181,7 +181,8 @@ const label = (tag) => TAGS[tag].label
 // THE DECISION RULE. Exactly one outcome per finished item:
 //   HARDER  : correct first try and streak >= 2          -> next task numeric (harder)
 //   ALT     : miss on a tag, strikes[tag] == 1           -> animation + different explanation, fresh question
-//   PREREQ  : miss on a tag, strikes[tag] >= 2           -> prerequisite lesson, then re-test
+//   PREREQ  : miss on a tag, strikes[tag] == 2           -> prerequisite lesson, then re-test
+//   ALT (3+): strikes[tag] >= 3 -> do not repeat the lesson; next task is an explain item (nature changes)
 //   NEXT    : otherwise (correct choice with no explanation yet -> next task is an explain item)
 export function decide(st, item, res) {
   const s = structuredClone(st)
@@ -195,7 +196,7 @@ export function decide(st, item, res) {
       s.gate[item.tag] = res.firstTry ? s.gate[item.tag] + 1 : 0
       if (item.format === 'explain') s.explained[item.tag] = true
     }
-    if (res.firstTry && s.streak >= 2) {
+    if (item.phase === 'A' && res.firstTry && s.streak >= 2) { // Phase B is a fixed package: nothing harder follows, so do not claim it
       s.streak = 0; s.nextFormat = 'numeric'
       outcome = { type: 'HARDER', tag, reason: 'Two correct first tries in a row, so the next task is harder (a numeric answer).' }
     } else if (item.phase === 'A' && item.format === 'choice' && res.firstTry && !s.explained[item.tag]) {
@@ -206,7 +207,11 @@ export function decide(st, item, res) {
     s.streak = 0; s.strikes[tag] = (s.strikes[tag] || 0) + 1
     if (s.gate[tag] !== undefined) s.gate[tag] = 0
     s.nextTag = tag; s.nextFormat = 'choice'
-    outcome = s.strikes[tag] >= 2
+    const k = s.strikes[tag]
+    if (k >= 3) { // the same lesson again would not help: change the nature of the task instead of looping
+      s.nextFormat = 'explain'
+      outcome = { type: 'ALT', tag, reason: `Still tricky after ${k} misses on "${label(tag)}". Next, explain it in your own words and we will work from your reasoning. Stopping for today is also fine.` }
+    } else outcome = k === 2
       ? { type: 'PREREQ', tag, reason: `Second miss on "${label(tag)}", so go back to the prerequisite lesson before trying again.` }
       : { type: 'ALT', tag, reason: `First miss on "${label(tag)}", so here is a different explanation, then a fresh question on the same idea.` }
   } else s.streak = 0

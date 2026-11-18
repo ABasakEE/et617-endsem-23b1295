@@ -64,6 +64,24 @@ console.log('fallback grader OK')
 
 // hint highlighting: glossary fallback finds idea words, never more than 3
 import { autoHighlight } from '../src/engine.js'
-assert.deepEqual(autoHighlight('Does a heavier ball fall faster? Think about the net force.'), ['net force', 'faster'])
+assert.deepEqual(autoHighlight('Does a heavier ball fall faster? Think about the net force.'), ['net force', 'faster', 'heavier'])
 assert.ok(autoHighlight('force force mass speed weight friction').length <= 3)
 console.log('highlight OK')
+
+// HARDER is a Phase A promise only (Phase B is fixed)
+{
+  const b = { ...templateItem('M1a', 'choice', 0), phase: 'B', kind: 'standard' }
+  const st = newState(1, 'harder')
+  assert.equal(decide(st, b, { correct: true, firstTry: true }).outcome.type, 'NEXT')
+  console.log('phase B no false HARDER OK')
+}
+
+// no endless prerequisite loop: 1st ALT, 2nd PREREQ, 3rd+ switches the task to explain
+{
+  const it = templateItem('M1a', 'choice', 0); let st = newState(1), types = []
+  for (let i = 0; i < 4; i++) { const d = decide(st, it, { correct: false, firstTry: false }); st = d.state; types.push(d.outcome.type) }
+  assert.deepEqual(types, ['ALT', 'PREREQ', 'ALT', 'ALT'])
+  assert.equal(nextStep(st).format, 'explain')
+  assert.ok(autoHighlight('Does a heavier ball land first?').length >= 2)
+  console.log('no prereq loop OK')
+}

@@ -23,14 +23,34 @@ One law = one session. The learner picks a law and goes through two phases.
 - **Phase A (AI-generated, adaptive concept loop).** Each item is a short scenario (push, free fall or two skaters) for a weak misconception tag. The learner predicts first, then watches the animation. Items repeat until the **mastery gate** is met (2 first-try correct answers in a row on each tag of the law) or 6 Phase A items have been used.
 - **Phase B (fixed standard package, same for everyone).** 5 hand-reviewed items per law: 3 standard + 2 tricky (exam-favourite traps). A missed tricky item sends the learner back to Phase A for that tag.
 
-| Format | Phase | Graded by |
-|---|---|---|
-| Predict-then-watch choice | A (generated), B (a few fixed items) | Code (simulator answer key) |
-| Numeric (tolerance 0.15) | A (generated), B (fixed) | Code |
-| Explain in 1-2 sentences | A (generated), B (fixed) | AI against a rubric; keyword grader if AI is unavailable |
-| Choice + one-line reason | B only | Choice by code, reason by AI (keyword fallback) |
+Before Phase A, every learner reads a 30-second concept card for the law.
 
-Phase A: a wrong first attempt gets a hint and one retry; the tutor decision runs after the retry. Phase B items are single-attempt.
+### Question types
+
+| Type | What the learner does | Phase | Graded by |
+|---|---|---|---|
+| **Predict-then-watch choice** | Reads a scenario, picks what will happen, then watches the animation play before the verdict appears | A (generated), B (fixed choice items) | Code, using the simulator as answer key |
+| **Numeric** | Types a number (distance, speed or acceleration, tolerance 0.15) | A (generated), B (fixed) | Code |
+| **Explain** | Writes 1-2 sentences on what happens and why | A (generated), B (fixed) | AI against a rubric; keyword grader if the AI is down |
+| **Choice + reason** ("tricky") | Picks an option and gives a one-line reason; built around a classic exam trap | B only | Choice by code, reason by AI (keyword fallback) |
+
+### Order of serving
+
+1. **Concept card** for the chosen law.
+2. **Phase A, adaptive.** The first item is a predict-then-watch choice on a weak idea. What follows depends on the answers:
+   - correct on the first try, no explanation yet on that idea: **explain** item on the same idea (guessing guard);
+   - two first-try correct answers in a row: a **numeric** item (harder) on the next open idea;
+   - a miss: hint and one retry, then the animation, a different explanation (or the prerequisite lesson on the second miss) and a fresh **choice** on the same idea; from the third miss the next task is an **explain** item instead of repeating the lesson.
+
+   Typical path for a strong learner: choice, explain, numeric, choice. Phase A ends when both ideas of the law reach the mastery gate, after 6 items, or at 8:00.
+3. **Phase B, fixed package.** Always in this order: standard numeric, standard choice, standard explain, tricky choice + reason, tricky choice + reason. Phase B items are single-attempt. A missed tricky item sends the learner back for one Phase A item on that idea, then Phase B continues.
+4. **Recap** of the weakest idea at 8:00 and a summary of open and closed traps at the end.
+
+| Law | S1 numeric | S2 choice | S3 explain | T1 tricky (idea) | T2 tricky (idea) |
+|---|---|---|---|---|---|
+| 1 Inertia | puck on frictionless ice, distance in 4 s | bus passenger tilts back | book stops on a rough table | frictionless puck (needs a force to keep moving) | steady box, 30 N pull = 30 N friction (balanced means rest) |
+| 2 F = ma | 20 N on a 4 kg trolley | same force on 2 kg and 4 kg carts | empty vs full shopping cart | 5 kg and 1 kg ball dropped (heavier falls faster) | constant 10 N on a cart (constant force means constant speed) |
+| 3 Action-reaction | skater pushes with 60 N, acceleration | foot kicks a football | gun kicks back when fired | horse and cart (forces cancel) | truck hits car (heavier pushes harder) |
 
 ## 3. The decision rule (the P4 design challenge)
 

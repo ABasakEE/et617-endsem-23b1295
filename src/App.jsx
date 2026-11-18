@@ -3,12 +3,14 @@ import { TAGS, PACKAGE } from './bank.js'
 import MotionCanvas from './MotionCanvas.jsx'
 import * as E from './engine.js'
 import * as api from './api.js'
+import './styles.css'
 
 const ID = '23B1295'
 const SAVE = 'nt_v1'
 const demo = new URLSearchParams(location.search).get('demo') // harder | alt | prereq
 const LAW_TITLE = { 1: 'Law 1: Inertia', 2: 'Law 2: F = ma', 3: 'Law 3: Action and reaction' }
-const CHIP = { HARDER: ['Harder task', '#8250df'], ALT: ['Different explanation', '#0969da'], PREREQ: ['Prerequisite lesson', '#9a6700'], NEXT: ['Next task', '#57606a'] }
+const CHIP = { HARDER: ['Harder task', 'harder'], ALT: ['Different explanation', 'alt'], PREREQ: ['Prerequisite lesson', 'prereq'], NEXT: ['Next task', 'next'] }
+const LAW_SUB = { 1: 'Why things keep moving', 2: 'How force, mass and acceleration connect', 3: 'Pairs of forces between two bodies' }
 
 const load = () => { try { return JSON.parse(localStorage.getItem(SAVE)) } catch { return null } }
 const store = (v) => { try { v ? localStorage.setItem(SAVE, JSON.stringify(v)) : localStorage.removeItem(SAVE) } catch { /* private mode: resume just won't work */ } }
@@ -22,9 +24,6 @@ const reveal = (it) => {
   return it.options.find((o) => o.id === it.answer).text + (it.rubric ? ` ${it.rubric.keyPoints.join(' ')}` : '')
 }
 
-const card = { border: '1px solid #d0d7de', borderRadius: 8, padding: 12, margin: '12px 0' }
-const btn = { padding: '10px 16px', fontSize: 16, borderRadius: 6, border: '1px solid #1f2328', background: '#fff', cursor: 'pointer', margin: '4px 4px 4px 0' }
-const primary = { ...btn, background: '#1f2328', color: '#fff' }
 
 export default function App() {
   const [view, setView] = useState('home')
@@ -108,10 +107,11 @@ export default function App() {
   }
 
   const wrap = (children) => (
-    <main style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 640, margin: '0 auto', padding: 16, lineHeight: 1.45 }}>
-      {children}
-      <footer style={{ marginTop: 32, padding: '12px 0', borderTop: '1px solid #d0d7de', fontSize: 13 }}>
-        ID {ID} · ET617 End-sem · <button style={{ ...btn, padding: '2px 8px', fontSize: 13 }} onClick={() => { if (view === 'about') setView(prev.current); else { prev.current = view === 'loading' ? 'home' : view; setView('about') } }}>About</button>
+    <main className="app">
+      <div className="screen" key={`${view}-${item?.id ?? ''}-${run}`}>{children}</div>
+      <footer className="foot">
+        ID {ID} · ET617 End-sem ·{' '}
+        <button className="link" onClick={() => { if (view === 'about') setView(prev.current); else { prev.current = view === 'loading' ? 'home' : view; setView('about') } }}>About</button>
       </footer>
     </main>
   )
@@ -120,73 +120,81 @@ export default function App() {
     <p><b>Newton's Traps</b> is an adaptive tutor for Newton's three laws (Class 9). It finds which wrong ideas you hold and fixes the biggest ones in one 10-minute sitting.</p>
     <p>Identity token: <b>{ID}</b><br />Card: P4 adaptive tutor · Newton's laws · L5 repeating learner · C4 10-minute sessions</p>
     <p>Question types: predict-then-watch, numeric, explanation, choice with reason. AI writes scenarios and feedback; the simulator decides what is correct.</p>
-    <button style={primary} onClick={() => setView(prev.current)}>Back</button></section>)
+    <button className="btn primary" onClick={() => setView(prev.current)}>Back</button></section>)
 
   if (view === 'home') return wrap(<section>
-    <h1>Newton's Traps</h1>
-    <p>Ten minutes. One law. We find the traps that catch you in exams and fix them.</p>
-    {demo && <p style={{ ...card, background: '#fff8c5' }}>Demo mode <b>{demo}</b>: {demo === 'harder' ? 'answer the first question correctly to see the HARDER outcome.' : demo === 'alt' ? 'answer wrongly once, then again, to see the DIFFERENT EXPLANATION outcome.' : 'miss a question twice to see the PREREQUISITE outcome.'}</p>}
-    {saved?.st && saved.st.elapsed < E.END_AT && <div style={card}>Saved session: {LAW_TITLE[saved.st.law]} ({fmt(saved.st.elapsed)} used). <button style={primary} onClick={resume}>Resume</button></div>}
-    {[1, 2, 3].map((l) => <div key={l}><button style={{ ...btn, width: '100%', textAlign: 'left' }} onClick={() => start(l)}>{LAW_TITLE[l]}</button></div>)}</section>)
+    <div className="hero"><div className="orb" aria-hidden="true" /><h1>Newton's Traps</h1>
+      <p className="lead">Ten minutes. One law. We find the traps that catch you in exams, then fix them.</p></div>
+    {demo && <p className="note amber">Demo mode <b>{demo}</b>: {demo === 'harder' ? 'answer the first question correctly to see the HARDER outcome.' : demo === 'alt' ? 'answer wrongly once, then again, to see the DIFFERENT EXPLANATION outcome.' : 'miss a question twice to see the PREREQUISITE outcome.'}</p>}
+    {saved?.st && saved.st.elapsed < E.END_AT && <div className="card resume"><span>Saved: <b>{LAW_TITLE[saved.st.law]}</b> · {fmt(saved.st.elapsed)} used</span><button className="btn primary" onClick={resume}>Resume</button></div>}
+    <div className="laws">{[1, 2, 3].map((l) => (
+      <button key={l} className="law" style={{ '--d': `${l * 70}ms` }} onClick={() => start(l)}>
+        <span className="num">{l}</span><span><b>{LAW_TITLE[l]}</b><small>{LAW_SUB[l]}</small></span><span className="go" aria-hidden="true">→</span>
+      </button>))}</div></section>)
 
-  if (view === 'loading') return wrap(<p>Getting your next question…</p>)
+  if (view === 'loading') return wrap(<div className="loading" role="status"><i /><i /><i /><span>Getting your next question</span></div>)
 
   const bar = st && (
-    <div style={{ margin: '8px 0' }}>
-      <div style={{ background: '#eaeef2', height: 8, borderRadius: 4 }}><div style={{ width: `${Math.min(100, (st.elapsed / E.END_AT) * 100)}%`, background: '#0969da', height: 8, borderRadius: 4 }} /></div>
-      <small>{fmt(st.elapsed)} of 10:00 · {LAW_TITLE[st.law]} · progress saves automatically{degraded && ' · offline mode: built-in questions/hints'}</small>
-      {st.elapsed >= E.RECAP_AT && st.elapsed < E.END_AT && <small> · almost time: a quick recap comes next</small>}
+    <div className="barwrap">
+      <div className="bar" role="progressbar" aria-valuemin="0" aria-valuemax="600" aria-valuenow={Math.min(600, st.elapsed)}><div style={{ width: `${Math.min(100, (st.elapsed / E.END_AT) * 100)}%` }} /></div>
+      <small>{fmt(st.elapsed)} of 10:00 · {LAW_TITLE[st.law]} · saves automatically{degraded && ' · offline mode: built-in questions/hints'}{st.elapsed >= E.RECAP_AT && st.elapsed < E.END_AT && ' · almost time: a quick recap comes next'}</small>
     </div>)
-  const stop = <button style={btn} onClick={() => { store({ st, item: view === 'item' ? item : null }); setView('home') }}>Stop for today</button>
+  const stop = <button className="btn ghost" onClick={() => { store({ st, item: view === 'item' ? item : null }); setView('home') }}>Stop for today</button>
 
   if (view === 'recap') {
     const tag = E.weakestTag(st)
     return wrap(<section>{bar}<h2>Quick recap</h2>
       <p>The idea to remember: <b>{TAGS[tag].label}</b></p><p>{E.ALT_EXPLAIN[tag]}</p>
       <MotionCanvas scenario={E.scenarioForTag(tag)} runKey={run} />
-      <button style={primary} onClick={() => go(st)}>Finish</button></section>)
+      <button className="btn primary" onClick={() => go(st)}>Finish</button></section>)
   }
 
   if (view === 'done') {
     const open = E.LAW_TAGS[st.law].filter((t) => st.gate[t] < E.MASTERY || st.strikes[t] > 0)
-    return wrap(<section><h2>Session complete: {LAW_TITLE[st.law]}</h2>
-      <p>Time used: {fmt(Math.min(st.elapsed, E.END_AT))}. Questions answered: {st.results.length}.</p>
-      {E.LAW_TAGS[st.law].map((t) => <div key={t} style={card}><b>{TAGS[t].label}</b><br />{st.gate[t] >= E.MASTERY && st.strikes[t] === 0 ? 'Looks solid.' : st.gate[t] >= E.MASTERY ? 'Fixed after a slip. Check again tomorrow.' : 'Still open. Start again tomorrow to close it.'}</div>)}
+    return wrap(<section><h2>Session complete</h2>
+      <p className="lead">{LAW_TITLE[st.law]} · {fmt(Math.min(st.elapsed, E.END_AT))} used · {st.results.length} questions</p>
+      {E.LAW_TAGS[st.law].map((t, i) => {
+        const closed = st.gate[t] >= E.MASTERY
+        return (<div key={t} className="card trap" style={{ '--d': `${i * 120}ms` }}>
+          <b>{TAGS[t].label}</b>
+          <div className="meter"><div className={closed ? 'full' : ''} style={{ '--w': `${Math.max(8, Math.min(100, (st.gate[t] / E.MASTERY) * 100))}%` }} /></div>
+          <small>{closed && st.strikes[t] === 0 ? 'Looks solid.' : closed ? 'Fixed after a slip. Check again tomorrow.' : 'Still open. Start again tomorrow to close it.'}</small></div>)
+      })}
       {open.length === 0 && <p>No open traps. Try another law.</p>}
-      <button style={primary} onClick={() => { store(null); setSt(null); setItem(null); setView('home') }}>Choose another law</button></section>)
+      <button className="btn primary" onClick={() => { store(null); setSt(null); setItem(null); setView('home') }}>Choose another law</button></section>)
   }
 
   if (view === 'result' && result) {
-    const [lab, col] = CHIP[result.outcome.type]
+    const [lab, cls] = CHIP[result.outcome.type]
     const tag = result.outcome.tag
     const scen = item.phase === 'A' ? item.params : tag ? E.scenarioForTag(tag) : null
     return wrap(<section>{bar}
-      <h2>{result.correct ? 'Correct.' : 'Not quite. Here is what happens.'}</h2>
+      <h2 className={`res ${result.correct ? 'ok' : 'miss'}`}>{result.correct ? '✓ Correct' : 'Not quite. Watch what happens.'}</h2>
       {result.feedback && <p>{result.feedback}</p>}
       {(item.phase === 'A' || !result.correct) && <><p><b>Answer:</b> {reveal(item)}</p>{scen && <MotionCanvas scenario={scen} runKey={run} />}</>}
-      {!result.correct && tag && <div style={card}><b>Another way to see it</b><p>{E.ALT_EXPLAIN[tag]}</p></div>}
-      {result.outcome.type === 'PREREQ' && E.prereqFor(tag) && <div style={{ ...card, background: '#fff8c5' }}><b>Prerequisite: {E.prereqFor(tag).title}</b><p>{E.prereqFor(tag).text}</p></div>}
-      <p style={{ ...card, borderColor: col }}><b style={{ color: col }}>Tutor decision: {lab}.</b> {result.outcome.reason}</p>
-      <button style={primary} onClick={() => go(st)}>Next</button>{stop}</section>)
+      {!result.correct && tag && <div className="card"><b>Another way to see it</b><p>{E.ALT_EXPLAIN[tag]}</p></div>}
+      {result.outcome.type === 'PREREQ' && E.prereqFor(tag) && <div className="card amber"><b>Prerequisite: {E.prereqFor(tag).title}</b><p>{E.prereqFor(tag).text}</p></div>}
+      <p className={`decision ${cls}`}><b>Tutor decision: {lab}.</b> {result.outcome.reason}</p>
+      <div className="row"><button className="btn primary" onClick={() => go(st)}>Next</button>{stop}</div></section>)
   }
 
   // item view
   const isA = item.phase === 'A'
   const choices = item.options && (
-    <div>{item.options.map((o) => (
-      <label key={o.id} style={{ display: 'block', padding: '10px 8px', border: '1px solid #d0d7de', borderRadius: 6, margin: '6px 0' }}>
-        <input type="radio" name="o" checked={ans === o.id} onChange={() => setAns(o.id)} /> {o.text}</label>))}</div>)
+    <div className="opts">{item.options.map((o) => (
+      <label key={o.id} className={`opt${ans === o.id ? ' sel' : ''}`}>
+        <input className="sr" type="radio" name="o" checked={ans === o.id} onChange={() => setAns(o.id)} /><span className="dot" aria-hidden="true" />{o.text}</label>))}</div>)
   const ready = item.format === 'choice' ? !!ans : item.format === 'choice+reason' ? ans && reason.trim().length > 2 : ans.trim().length > 0
   return wrap(<section>{bar}
-    <small>{isA ? 'Concept practice: predict first, then watch' : `Exam check: ${item.kind === 'tricky' ? 'exam-favourite tricky question' : 'standard question'}`}</small>
-    {isA && <p><b>{item.facts}</b> {item.story}</p>}
-    <p style={{ fontSize: 18 }}>{q(item)}</p>
-    {hint && <p style={{ ...card, background: '#ddf4ff' }}>Hint: {hint} Try again.</p>}
+    <span className={`tag ${isA ? '' : item.kind}`}>{isA ? 'Concept practice · predict first, then watch' : `Exam check · ${item.kind === 'tricky' ? 'exam-favourite tricky question' : 'standard question'}`}</span>
+    {isA && <p className="facts"><b>{item.facts}</b> {item.story}</p>}
+    <p className="qtext">{q(item)}</p>
+    {hint && <p className="note blue">Hint: {hint} Try again.</p>}
     {(item.format === 'choice' || item.format === 'choice+reason') && choices}
-    {item.format === 'numeric' && <input value={ans} onChange={(e) => setAns(e.target.value)} inputMode="decimal" placeholder={`answer in ${item.unit}`} style={{ fontSize: 18, padding: 8 }} />}
-    {item.format === 'explain' && <textarea value={ans} onChange={(e) => setAns(e.target.value)} rows={3} style={{ width: '100%', fontSize: 16 }} placeholder="Write your reasoning…" />}
-    {item.format === 'choice+reason' && <><p>{item.reasonPrompt}</p><textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} style={{ width: '100%', fontSize: 16 }} /></>}
-    <div><button style={primary} disabled={!ready || busy} onClick={submit}>{busy ? 'Checking…' : 'Submit'}</button>{stop}</div>
-    {isA && <small>{item.source === 'ai' ? 'AI-written scenario' : 'Built-in scenario'}</small>}
+    {item.format === 'numeric' && <input className="field" value={ans} onChange={(e) => setAns(e.target.value)} inputMode="decimal" placeholder={`answer in ${item.unit}`} />}
+    {item.format === 'explain' && <textarea className="field" value={ans} onChange={(e) => setAns(e.target.value)} rows={3} placeholder="Write your reasoning…" />}
+    {item.format === 'choice+reason' && <><p>{item.reasonPrompt}</p><textarea className="field" value={reason} onChange={(e) => setReason(e.target.value)} rows={2} /></>}
+    <div className="row"><button className="btn primary" disabled={!ready || busy} onClick={submit}>{busy ? 'Checking…' : 'Submit'}</button>{stop}</div>
+    {isA && <small className="src">{item.source === 'ai' ? 'AI-written scenario' : 'Built-in scenario'}</small>}
   </section>)
 }

@@ -41,3 +41,9 @@ Clock note: ~45 min left at the start of the build block. Priority = generated q
 4. Deployments → latest → ⋯ → Redeploy (env vars only apply to new deployments).
 5. Open `https://<your-domain>/api/health` — it must show `{"hasKey":true,"model":"gemini-3.5-flash-lite"}`.
 6. Local only: `.env.local` already holds both (git-ignored). Never paste the key in chat or commit it.
+
+## UI restyle (soft light theme)
+- `src/styles.css`: design tokens (warm off-white, muted teal accent, amber for hints/prereq, no red), CSS-only animations (screen rise, floating orb, staggered law cards, eased progress bar, option select, result pop, decision chip fade, loading dots, meters grow), `prefers-reduced-motion` respected. `App.jsx` now uses class names (logic untouched).
+- `MotionCanvas.jsx` rewritten: stroboscopic ghost marks (equal gaps = constant speed, growing gaps = acceleration), live velocity arrow, force/friction/weight arrows, skater figures, Replay + Slow motion buttons, per-kind caption, reduced-motion shows the end state.
+- Verified with headless Chrome at 390 px and 1000 px: home, item, hint, result (3 laws), Phase B tricky, done, recap, resume. No console errors. Screenshots were taken offline mode (`?offline=1`).
+- Not verified: real AI-generated items in the browser (live site), touch gestures on a real phone.

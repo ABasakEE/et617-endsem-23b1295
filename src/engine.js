@@ -89,6 +89,8 @@ const OPT = {
 }
 
 // Merge cues/keywords for a tag from the fixed bank so generated explain items reuse reviewed vocabulary.
+// Extra misconception phrasings seen in testing, for the AI-down fallback grader.
+const EXTRA_CUES = { M1a: ['used up', 'runs out', 'run out', 'wears out', 'loses its force', 'loses force'], M2a: ['heavier falls faster', 'heavy falls faster', 'heavier ball falls faster', 'lighter falls slower'], M2b: ['constant speed', 'steady speed'], M3a: ['cancel', 'cancels out', 'nothing moves'], M3b: ['heavier pushes harder', 'truck pushes harder', 'heavier body pushes harder'] }
 function rubricFor(tag) {
   const cues = new Set(), kws = new Set()
   for (const it of Object.values(PACKAGE).flat()) {
@@ -96,6 +98,7 @@ function rubricFor(tag) {
     ;(it.rubric.cues[tag] || []).forEach((c) => cues.add(c))
     if (it.tags.includes(tag)) it.rubric.keywords.forEach((k) => kws.add(k))
   }
+  ;(EXTRA_CUES[tag] || []).forEach((c) => cues.add(c))
   return { keyPoints: [TAGS[tag].right], cues: { [tag]: [...cues] }, keywords: [...kws] }
 }
 
@@ -153,13 +156,15 @@ export function autoHighlight(text) {
 }
 const GENERIC =['faster', 'speed', 'velocity', 'constant', 'same', 'equal', 'opposite', 'different bod', 'accelerat', 'mass', 'weight', 'force', 'inertia', 'friction', 'keeps']
 // Keyword grader used when the AI is unavailable (and as a sanity net). Lenient on wording.
+// Lowercase, drop punctuation and filler words so "the force is used up" matches the cue "force used up".
+const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\b(is|are|the|a|an|it|its|gets|get|be|will|just|really|very)\b/g, ' ').replace(/\s+/g, ' ').trim()
 export function gradeLocal(text, rubric, tag) {
-  const t = (text || '').toLowerCase().trim()
+  const t = norm(text)
   if (t.length < 3) return { correct: false, tag: null, feedback: 'Try writing one or two sentences about what you expect and why.' }
-  const hit = Object.entries(rubric.cues || {}).find(([, cs]) => cs.some((c) => t.includes(c) && !t.includes(`not ${c}`) && !t.includes(`n't ${c}`)))
+  const hit = Object.entries(rubric.cues || {}).find(([, cs]) => cs.map(norm).some((c) => t.includes(c) && !t.includes(`not ${c}`) && !t.includes(`nt ${c}`)))
   // Generic physics words too: the AI-down fallback must not fail correct answers that use everyday wording.
   const kw = [...(rubric.keywords || []), ...GENERIC].filter((k) => t.includes(k)).length
-  const correct = !hit && kw >= 1
+  const correct = !hit && kw >= 2 // two hits: one generic word (e.g. "force") must not pass a misconception
   return {
     correct, tag: correct ? null : (hit?.[0] || tag || null),
     feedback: correct ? 'Good. You used the key idea.' : 'Think about which forces act on the object, and what the net force does to its motion.',

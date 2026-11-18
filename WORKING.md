@@ -59,3 +59,9 @@ Clock note: ~45 min left at the start of the build block. Priority = generated q
 - Cause of false "incorrect": (1) grader only saw generic key ideas, not what this scenario does; (2) when the AI call failed, the keyword fallback rejected everyday wording. FIX: `/api/grade` has a reasoning-first system prompt (work out the outcome, list the learner's claims, check each, then decide; wording/grammar lenient), receives the simulator-computed `reference` outcome and the chosen option; fallback grader accepts generic physics words but still fails misconception cues.
 - Tests: no-repeat (15 items per tag), reference text, fallback grader; live grading check 6/6 correct on cases that returned (3 calls returned 502, free-tier limits).
 - README.md written by an independent subagent; reviewed against code, two statements corrected.
+
+## Live end-to-end test (headless Chrome, 390 px, real Gemini) and fixes
+- Ran all three laws x two paths on https://et617-23b1295.vercel.app. Correct paths: 9 questions each, concept screen, Phase A then Phase B, done screen, token on every screen, no console errors. Misconception paths: ALT then PREREQ as designed, hints with boxed words, Stop for today + Resume worked for all three laws.
+- FOUND + FIXED: (1) HARDER was announced in Phase B where nothing harder follows; (2) prerequisite lesson repeated identically on every later miss (now: 3rd miss switches the task to explain); (3) hints without boxed words (glossary expanded); (4) fallback grader passed a wrong explanation ("force is used up") because generic words counted too leniently (now needs 2 hits, filler-insensitive cue matching, extra cue phrasings).
+- Free tier: 3 sessions in parallel gave 2-5 failed API calls each (502/429); the fallbacks kept every run completing. Offline label appears in the session bar.
+- Not covered: real phone, keyboard-only pass, AI grader false positives (only the fallback was tightened).

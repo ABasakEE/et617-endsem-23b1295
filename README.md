@@ -40,7 +40,8 @@ After every finished item the function `decide()` in `src/engine.js` returns exa
 |---|---|---|
 | HARDER | Correct on the first try and `streak >= 2` (streak then resets) | Next task is a numeric (harder) item |
 | ALTERNATIVE EXPLANATION | Final answer wrong and `strikes[tag] == 1` (first miss on that tag) | Animation, a different analogy ("Another way to see it"), then a fresh choice question on the same tag |
-| PREREQUISITE | Final answer wrong and `strikes[tag] >= 2` | Animation, the prerequisite micro-lesson for that tag, then a fresh choice question |
+| PREREQUISITE | Final answer wrong and `strikes[tag] == 2` | Animation, the prerequisite micro-lesson for that tag, then a fresh choice question |
+| ALTERNATIVE EXPLANATION (3rd+ miss) | Final answer wrong and `strikes[tag] >= 3` | The same lesson is not repeated; the next task switches to an **explain** item and the learner is told stopping for today is fine |
 | NEXT | Everything else | Normal next item; see the format rule below |
 
 Other rules:

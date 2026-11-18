@@ -85,3 +85,14 @@ console.log('highlight OK')
   assert.ok(autoHighlight('Does a heavier ball land first?').length >= 2)
   console.log('no prereq loop OK')
 }
+
+// AI-down fallback must not pass the targeted misconception, and must still pass correct everyday answers
+{
+  for (const [tag, bad] of [['M1a', 'It slows down because the force is used up.'], ['M2a', 'The heavier ball falls faster because it has more weight.'], ['M3a', 'The action and reaction cancel so nothing moves.'], ['M2b', 'A constant force gives a constant speed.']]) {
+    const rub = templateItem(tag, 'explain', 0).rubric
+    assert.equal(gradeLocal(bad, rub, tag).correct, false, `false positive: ${bad}`)
+  }
+  const good = [['M1a', 'no net force so it keeps moving at constant velocity because of inertia'], ['M2b', 'it will go faster and faster because the force keeps pushing it'], ['M3a', 'the forces act on different bodies so they do not cancel']]
+  for (const [tag, t] of good) assert.equal(gradeLocal(t, templateItem(tag, 'explain', 0).rubric, tag).correct, true, `false negative: ${t}`)
+  console.log('fallback strictness OK')
+}

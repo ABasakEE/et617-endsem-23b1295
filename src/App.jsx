@@ -33,6 +33,14 @@ const reveal = (it) => {
 }
 
 
+// Boxes the words the AI chose to focus on (or a built-in glossary when it chose none).
+function Marked({ text, words }) {
+  const ws = words?.length ? words : E.autoHighlight(text)
+  if (!ws.length) return text
+  const re = new RegExp(`(${ws.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi')
+  return text.split(re).map((part, i) => (i % 2 ? <mark key={i} className="hl">{part}</mark> : part))
+}
+
 export default function App() {
   const [view, setView] = useState('home')
   const [st, setSt] = useState(null)
@@ -41,6 +49,7 @@ export default function App() {
   const [ans, setAns] = useState('')
   const [reason, setReason] = useState('')
   const [hint, setHint] = useState('')
+  const [hintHl, setHintHl] = useState([])
   const [result, setResult] = useState(null)
   const [run, setRun] = useState(0)
   const [busy, setBusy] = useState(false)
@@ -85,7 +94,7 @@ export default function App() {
 
   async function submit() {
     setBusy(true)
-    let correct = false, tag = item.tag || item.tags?.[0] || null, fb = ''
+    let correct = false, tag = item.tag || item.tags?.[0] || null, fb = '', hl = []
     const opt = item.options?.find((o) => o.id === ans)
     if (item.format === 'choice') { correct = ans === item.answer; if (!correct && opt?.tag) tag = opt.tag }
     else if (item.format === 'numeric') correct = Math.abs(parseFloat(ans) - item.answer) <= item.tolerance
@@ -98,16 +107,16 @@ export default function App() {
       } catch { setDegraded(true); g = E.gradeLocal(text, item.rubric, tag) }
       correct = (item.format === 'choice+reason' ? ans === item.answer : true) && g.correct
       if (!correct) tag = g.tag || opt?.tag || tag
-      fb = g.feedback || ''
+      fb = g.feedback || ''; hl = Array.isArray(g.highlight) ? g.highlight : []
     }
     setBusy(false)
     if (!correct && item.phase === 'A' && att === 0) { // retry with a hint that never reveals the answer
       setAtt(1); setAns(''); hintFor.current = item.id
       const canned = E.HINTS[tag]?.[0] || 'Look again at the forces acting on the object.'
-      setHint(fb || canned)
+      setHint(fb || canned); setHintHl(fb ? hl : [])
       const said = item.format === 'choice' ? opt?.text : item.format === 'numeric' ? `${ans} ${item.unit}` : ans
       api.feedback({ stem: `${item.facts || ''} ${item.story || ''} ${q(item)}`.trim(), learnerAnswer: String(said || ''), tag, attempt: 1 })
-        .then((r) => { if (hintFor.current === item.id && typeof r.feedback === 'string') setHint(r.feedback) }).catch(() => setDegraded(true))
+        .then((r) => { if (hintFor.current === item.id && typeof r.feedback === 'string') { setHint(r.feedback); setHintHl(Array.isArray(r.highlight) ? r.highlight : []) } }).catch(() => setDegraded(true))
       return
     }
     const { state, outcome } = E.decide(st, item, { correct, firstTry: att === 0, tag })
@@ -115,7 +124,7 @@ export default function App() {
     const step = E.nextStep(state)
     pre.current = step.kind === 'A' ? { step, promise: genItem(step, state) } : null // start generating now: hides latency
     const predicted = item.format === 'numeric' ? `${ans} ${item.unit}` : item.format === 'choice' || item.format === 'choice+reason' ? opt?.text : ans
-    setWatched(false); setResult({ correct, outcome, feedback: fb, predicted }); setRun((r) => r + 1); setView('result')
+    setWatched(false); setResult({ correct, outcome, feedback: fb, hl, predicted }); setRun((r) => r + 1); setView('result')
   }
 
   const wrap = (children) => (
@@ -194,7 +203,7 @@ export default function App() {
       {scen && (item.phase === 'A' || !result.correct) && <MotionCanvas scenario={scen} runKey={run} onDone={() => setWatched(true)} />}
       {gated && <button className="btn ghost sm" onClick={() => setWatched(true)}>Skip animation</button>}
       {!gated && <div className="screen">
-        {result.feedback && <p>{result.feedback}</p>}
+        {result.feedback && <p><Marked text={result.feedback} words={result.hl} /></p>}
         {(item.phase === 'A' || !result.correct) && <p><b>What happened:</b> {reveal(item)}</p>}
         {!result.correct && tag && <div className="card"><b>Another way to see it</b><p>{E.ALT_EXPLAIN[tag]}</p></div>}
         {result.outcome.type === 'PREREQ' && E.prereqFor(tag) && <div className="card amber"><b>Prerequisite: {E.prereqFor(tag).title}</b><p>{E.prereqFor(tag).text}</p></div>}
@@ -213,7 +222,7 @@ export default function App() {
     <span className={`tag ${isA ? '' : item.kind}`}>{isA ? 'Concept practice · predict first, then watch' : `Exam check · ${item.kind === 'tricky' ? 'exam-favourite tricky question' : 'standard question'}`}</span>
     {isA && <p className="facts"><b>{item.facts}</b></p>}
     <p className="qtext">{q(item)}</p>
-    {hint && <p className="note blue">Hint: {hint} Try again.</p>}
+    {hint && <p className="note blue" key={hint}>Hint: <Marked text={hint} words={hintHl} /> Try again.</p>}
     {(item.format === 'choice' || item.format === 'choice+reason') && choices}
     {item.format === 'numeric' && <input className="field" value={ans} onChange={(e) => setAns(e.target.value)} inputMode="decimal" placeholder={`answer in ${item.unit}`} />}
     {item.format === 'explain' && <textarea className="field" value={ans} onChange={(e) => setAns(e.target.value)} rows={3} placeholder="Write your reasoning…" />}

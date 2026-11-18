@@ -140,7 +140,18 @@ export function templateItem(tag, format, n = 0, seen = []) {
   return buildItem(tag, format, unseenParams(tag, templateParams(tag, n), seen, n), '', 'template', n)
 }
 
-const GENERIC = ['faster', 'speed', 'velocity', 'constant', 'same', 'equal', 'opposite', 'different bod', 'accelerat', 'mass', 'weight', 'force', 'inertia', 'friction', 'keeps']
+// Words to box in built-in hints, and when the AI proposes none. Longest/most specific first.
+const GLOSS = ['net force', 'different bod(?:y|ies)', 'equal', 'opposite', 'balanced', 'faster', 'accelerat\\w*', 'friction', 'weight', 'mass', 'speed', 'force']
+export function autoHighlight(text) {
+  const out = []
+  for (const g of GLOSS) {
+    const m = String(text).match(new RegExp(g, 'i'))
+    if (m && !out.some((o) => o.toLowerCase().includes(m[0].toLowerCase()))) out.push(m[0]) // skip a word already inside a picked phrase
+    if (out.length === 3) break
+  }
+  return out
+}
+const GENERIC =['faster', 'speed', 'velocity', 'constant', 'same', 'equal', 'opposite', 'different bod', 'accelerat', 'mass', 'weight', 'force', 'inertia', 'friction', 'keeps']
 // Keyword grader used when the AI is unavailable (and as a sanity net). Lenient on wording.
 export function gradeLocal(text, rubric, tag) {
   const t = (text || '').toLowerCase().trim()

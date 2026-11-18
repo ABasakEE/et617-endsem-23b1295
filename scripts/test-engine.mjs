@@ -61,3 +61,9 @@ assert.equal(gradeLocal('it will go faster and faster because the force keeps pu
 assert.equal(gradeLocal('it reaches a steady speed because the force is constant', r2, 'M2b').correct, false)
 assert.equal(gradeLocal('banana', r2, 'M2b').correct, false)
 console.log('fallback grader OK')
+
+// hint highlighting: glossary fallback finds idea words, never more than 3
+import { autoHighlight } from '../src/engine.js'
+assert.deepEqual(autoHighlight('Does a heavier ball fall faster? Think about the net force.'), ['net force', 'faster'])
+assert.ok(autoHighlight('force force mass speed weight friction').length <= 3)
+console.log('highlight OK')

@@ -104,3 +104,7 @@ small { color: var(--muted); font-size: .85rem; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
 @media (max-width: 400px) { h1 { font-size: 1.6rem; } .app { padding: 14px 12px 28px; } }
+
+/* Focus words in hints: a soft box that settles in, not a flashing highlight */
+.hl { background: #fff3cf; border: 1.5px solid #e2b94f; border-radius: 6px; padding: 0 5px; margin: 0 1px; font-weight: 600; color: #5b3d00; box-decoration-break: clone; -webkit-box-decoration-break: clone; animation: hlin .55s cubic-bezier(.2,.9,.3,1.2) both; }
+@keyframes hlin { from { background: transparent; border-color: transparent; transform: scale(.92); } to { transform: none; } }

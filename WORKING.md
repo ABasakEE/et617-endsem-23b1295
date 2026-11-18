@@ -53,3 +53,9 @@ Clock note: ~45 min left at the start of the build block. Priority = generated q
 - FOUND: AI hint stated the answer ("gravity pulls all objects with the same acceleration"). FIX: `/api/feedback` prompt now asks for one question only and the server keeps just the question sentence (502 → canned hint if none). `/api/grade` keeps only the question sentence on a miss.
 - FOUND: AI story named different objects than the facts line. FIX: story no longer displayed; the facts line (built from validated params) is the only scenario text. AI still chooses the scenario numbers, hints, grading.
 - Remaining softness: guiding questions can still lean toward the answer; no way to guarantee otherwise with an LLM.
+
+## Logic review: repeated questions and false "incorrect" marks
+- Cause of repeats: nothing remembered earlier scenarios and the AI (low temperature) kept returning the same few numbers; after a miss the engine asks for the same tag/format again. FIX: `st.seen` stores every shown scenario; `unseenParams()` swaps in an unused template, then random in-range numbers; `/api/generate` gets `avoid` (earlier number sets), temperature 1.0 and a random seed.
+- Cause of false "incorrect": (1) grader only saw generic key ideas, not what this scenario does; (2) when the AI call failed, the keyword fallback rejected everyday wording. FIX: `/api/grade` has a reasoning-first system prompt (work out the outcome, list the learner's claims, check each, then decide; wording/grammar lenient), receives the simulator-computed `reference` outcome and the chosen option; fallback grader accepts generic physics words but still fails misconception cues.
+- Tests: no-repeat (15 items per tag), reference text, fallback grader; live grading check 6/6 correct on cases that returned (3 calls returned 502, free-tier limits).
+- README.md written by an independent subagent; reviewed against code, two statements corrected.

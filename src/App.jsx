@@ -51,12 +51,12 @@ export default function App() {
   useEffect(() => { if (st && view !== 'home' && view !== 'about') store(view === 'done' ? null : { st, item: view === 'item' ? item : null }) }, [st, item, view])
 
   async function genItem(step, s) {
-    const n = s.aCount
+    const n = s.aCount, seen = s.seen || []
     try {
-      const r = await api.generate({ tag: step.tag, format: step.format, kind: E.TAG_KIND[step.tag], recent: s.results.slice(-6).map((x) => ({ tag: x.tag, correct: x.correct })) })
+      const r = await api.generate({ tag: step.tag, format: step.format, kind: E.TAG_KIND[step.tag], recent: s.results.slice(-6).map((x) => ({ tag: x.tag, correct: x.correct })), avoid: seen.slice(-6).map(E.sigToParams) })
       if (typeof r.stem !== 'string' || !r.params) throw new Error('bad shape')
-      return E.buildItem(step.tag, step.format, r.params, clean(r.stem), 'ai', n)
-    } catch { setDegraded(true); return E.templateItem(step.tag, step.format, n) }
+      return E.buildItem(step.tag, step.format, E.unseenParams(step.tag, r.params, seen, n), clean(r.stem), 'ai', n)
+    } catch { setDegraded(true); return E.templateItem(step.tag, step.format, n, seen) }
   }
 
   async function go(s) {
@@ -66,7 +66,8 @@ export default function App() {
     if (step.kind === 'recap') { setSt(E.consume(s, step)); return setView('recap') }
     setView('loading')
     const it = step.kind === 'A' ? await (p ? p.promise : genItem(step, s)) : { ...step.item, phase: 'B' }
-    setSt(E.consume(s, step)); setItem(it); setAtt(0); setAns(''); setReason(''); setHint(''); setResult(null); setView('item')
+    const c = E.consume(s, step)
+    setSt(step.kind === 'A' ? { ...c, seen: [...(c.seen || []), E.sigOf(it.params)] } : c); setItem(it); setAtt(0); setAns(''); setReason(''); setHint(''); setResult(null); setView('item')
   }
 
   const start = (law) => go(E.newState(law, demo))
@@ -82,7 +83,7 @@ export default function App() {
       const text = item.format === 'choice+reason' ? reason : ans
       let g
       try {
-        g = await api.grade({ prompt: `${item.facts || ''} ${q(item)}`.trim(), learnerText: text, rubric: item.rubric, tags: E.LAW_TAGS[st.law] })
+        g = await api.grade({ prompt: `${item.facts || ''} ${q(item)}`.trim(), learnerText: text, rubric: item.rubric, tags: E.LAW_TAGS[st.law], reference: item.reference, chosen: opt?.text })
         if (typeof g.correct !== 'boolean') throw new Error('bad shape')
       } catch { setDegraded(true); g = E.gradeLocal(text, item.rubric, tag) }
       correct = (item.format === 'choice+reason' ? ans === item.answer : true) && g.correct

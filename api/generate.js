@@ -54,6 +54,9 @@ export default async function handler(req, res) {
   const kind = TAGS[tag] // tag wins over a mismatching body.kind
   const keys = Object.entries(RANGES[kind]).map(([k, [lo, hi]]) => `"${k}": integer ${lo}-${hi}`).join(', ')
   const recentTags = (recent || []).map((r) => String(r?.tag ?? '').slice(0, 8)).join(', ') || 'none'
+  // Number sets already shown to this learner. The client also enforces this, but asking avoids wasted calls.
+  const avoid = (Array.isArray(b.avoid) ? b.avoid.slice(-8) : []).filter((a) => a && typeof a === 'object')
+    .map((a) => JSON.stringify(Object.fromEntries(Object.entries(a).filter(([k, v]) => k !== 'kind' && Number.isFinite(v))))).join('; ')
   const prompt = `You write short physics questions for a Class 9 learner. Use simple English and short sentences. Audience is calm and encouraging.
 Topic: Newton's laws of motion. Scenario type: ${kind} (${UNITS}).
 Scenario rule: ${TAG_RULES[tag]}
@@ -61,11 +64,12 @@ Choose integer numbers within these ranges: ${keys}.
 Write a 1-2 sentence scenario stem that mentions the chosen numbers with units.
 The stem must NOT state the outcome or the answer. It must end with ${ASK[format]}.
 Vary the scenario (objects, setting) from earlier questions. Earlier question tags: ${recentTags}.
+${avoid ? `Do NOT reuse any of these number sets, pick clearly different values: ${avoid}.\n` : ''}Variation seed: ${Math.floor(Math.random() * 1e6)}.
 Use generic objects only (cart, box, ball, trolley). No names of people.
 Return JSON only: {"params": {${keys}}, "stem": "..."}`
 
   try {
-    const out = await askGemini(prompt, { timeoutMs: Number(process.env.AI_TIMEOUT_MS) || 14000 })
+    const out = await askGemini(prompt, { timeoutMs: Number(process.env.AI_TIMEOUT_MS) || 14000, temperature: 1.0 })
     const params = buildParams(tag, kind, out?.params)
     const stem = typeof out?.stem === 'string' ? out.stem.trim() : ''
     if (!params || stem.length < 10 || stem.length > 400) throw new Error('unusable')

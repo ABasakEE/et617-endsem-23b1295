@@ -42,3 +42,22 @@ const rub = templateItem('M1a', 'explain', 0).rubric
 assert.equal(gradeLocal('no net force so constant velocity, inertia', rub, 'M1a').correct, true)
 assert.equal(gradeLocal('the force runs out so it stops', rub, 'M1a').tag, 'M1a')
 console.log('engine OK')
+
+// no scenario repeats: 15 consecutive items on one tag all have different numbers
+import { sigOf, unseenParams } from '../src/engine.js'
+for (const tag of ['M1a', 'M2b', 'M3b']) {
+  const seen = []
+  for (let i = 0; i < 15; i++) { const it = templateItem(tag, 'choice', i, seen); const s = sigOf(it.params); assert.ok(!seen.includes(s), `repeat ${tag} ${s}`); seen.push(s) }
+}
+assert.ok(!['kind=push|mass=2|force=0|friction=0|v0=3'].includes(sigOf(unseenParams('M1a', { mass: 2, v0: 3 }, ['kind=push|mass=2|force=0|friction=0|v0=3']))))
+// explain items carry the simulator's reference outcome
+assert.match(templateItem('M2b', 'explain', 0).reference, /speed keeps increasing/)
+assert.match(templateItem('M2a', 'explain', 0).reference, /land together/)
+console.log('engine no-repeat OK')
+
+// AI-down fallback grader: everyday wording passes, misconception cues still fail
+const r2 = templateItem('M2b', 'explain', 0).rubric
+assert.equal(gradeLocal('it will go faster and faster because the force keeps pushing it', r2, 'M2b').correct, true)
+assert.equal(gradeLocal('it reaches a steady speed because the force is constant', r2, 'M2b').correct, false)
+assert.equal(gradeLocal('banana', r2, 'M2b').correct, false)
+console.log('fallback grader OK')

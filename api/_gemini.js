@@ -1,5 +1,6 @@
 // Shared Gemini call. Returns parsed JSON or throws; callers fall back on any throw.
-export async function askGemini(prompt, { timeoutMs = 6000 } = {}) {
+// system: optional system instruction. thinking: 'minimal' is ~1-8 s on the free tier; budget 0 is rejected (400).
+export async function askGemini(prompt, { timeoutMs = 6000, system, temperature = 0.4, thinking = 'minimal' } = {}) {
   const key = process.env.GEMINI_API_KEY
   const model = process.env.GEMINI_MODEL
   if (!key || !model) throw new Error('gemini env not set')
@@ -9,9 +10,9 @@ export async function askGemini(prompt, { timeoutMs = 6000 } = {}) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
+        ...(system && { systemInstruction: { parts: [{ text: system }] } }),
         contents: [{ parts: [{ text: prompt }] }],
-        // minimal thinking: ~1s instead of ~8s on 3.x flash-lite; budget 0 is rejected (400)
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.4, thinkingConfig: { thinkingLevel: 'minimal' } },
+        generationConfig: { responseMimeType: 'application/json', temperature, thinkingConfig: { thinkingLevel: thinking } },
       }),
       signal: AbortSignal.timeout(timeoutMs),
     },

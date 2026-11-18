@@ -53,6 +53,24 @@ const TEMPLATES = {
   M3b: [{ m1: 2, m2: 6, force: 12 }, { m1: 8, m2: 2, force: 16 }, { m1: 3, m2: 9, force: 18 }],
 }
 export const templateParams = (tag, n = 0) => { const t = TEMPLATES[tag]; return normalizeParams(tag, t[n % t.length]) }
+
+// Scenario memory: a learner never sees the same numbers twice (the AI at low temperature repeats itself).
+export const sigOf = (p) => Object.entries(p).map(([k, v]) => `${k}=${v}`).join('|')
+export const sigToParams = (s) => Object.fromEntries(s.split('|').map((kv) => { const [k, v] = kv.split('='); return [k, isNaN(v) ? v : Number(v)] }))
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1))
+const randomParams = (tag) => ({
+  M1a: () => ({ mass: rnd(1, 5), v0: rnd(1, 5) }), M1b: () => ({ mass: rnd(1, 5), force: rnd(1, 4), v0: rnd(1, 5) }),
+  M2b: () => ({ mass: rnd(1, 5), force: rnd(1, 10) }), M2a: () => ({ m1: rnd(1, 10), m2: rnd(1, 10) }),
+  M3a: () => ({ m1: rnd(1, 10), force: rnd(2, 20) }), M3b: () => ({ m1: rnd(1, 10), m2: rnd(1, 10), force: rnd(2, 20) }),
+}[tag]())
+export function unseenParams(tag, params, seen = [], n = 0) {
+  const fresh = (p) => !seen.includes(sigOf(p))
+  let p = normalizeParams(tag, params)
+  if (fresh(p)) return p
+  for (let i = 1; i <= TEMPLATES[tag].length; i++) { p = templateParams(tag, n + i); if (fresh(p)) return p }
+  for (let i = 0; i < 40; i++) { p = normalizeParams(tag, randomParams(tag)); if (fresh(p)) return p }
+  return normalizeParams(tag, params) // everything seen (very long session): repeat rather than fail
+}
 export const scenarioForTag = (tag) => templateParams(tag, 0)
 
 export function facts(p) {
@@ -81,6 +99,21 @@ function rubricFor(tag) {
   return { keyPoints: [TAGS[tag].right], cues: { [tag]: [...cues] }, keywords: [...kws] }
 }
 
+// What actually happens in this exact scenario, computed by the simulator. Given to the grader as ground truth.
+function referenceFor(p) {
+  if (p.kind === 'push') {
+    const net = p.force - p.friction
+    return {
+      constant: `Net force is ${net} N, so the block keeps moving at ${p.v0} m/s (constant velocity).`,
+      speeds: `Net force is ${net} N forward, so a = ${r1(net / p.mass)} m/s² and the speed keeps increasing.`,
+      slows: `Net force is ${-net} N backward, so the block slows down at ${r1(-net / p.mass)} m/s².`,
+      rest: 'The push is not larger than friction, so the block stays at rest.',
+    }[pushOutcome(p)]
+  }
+  if (p.kind === 'fall') return 'Both balls have the same acceleration, g = 10 m/s², so they land together whatever their masses.'
+  return `The two forces are equal (${p.force} N) and act on different bodies. Both skaters accelerate: A at ${r1(p.force / p.m1)} m/s², B at ${r1(p.force / p.m2)} m/s². The lighter one accelerates more.`
+}
+
 export function buildItem(tag, format, params, story, source, n = 0) {
   const p = normalizeParams(tag, params)
   const base = { id: `A${n}-${tag}-${format}`, phase: 'A', tag, format, params: p, facts: facts(p), story: story || '', source, hints: HINTS[tag] }
@@ -93,7 +126,7 @@ export function buildItem(tag, format, params, story, source, n = 0) {
     return { ...base, question: q, answer: r1(a), tolerance: 0.15, unit, reveal: `${r1(a)} ${unit}` }
   }
   if (format === 'explain')
-    return { ...base, question: 'Predict what will happen and explain why, in one or two sentences.', rubric: rubricFor(tag), reveal: TAGS[tag].right }
+    return { ...base, question: 'Predict what will happen and explain why, in one or two sentences.', rubric: rubricFor(tag), reference: referenceFor(p), reveal: referenceFor(p) }
   let options, answer, question
   if (p.kind === 'push') { options = OPT.push; answer = pushOutcome(p); question = "What happens to the block's speed during the next 4 seconds?" }
   else if (p.kind === 'fall') { options = OPT.fall; answer = 'same'; question = 'Which ball lands first?' }
@@ -103,16 +136,18 @@ export function buildItem(tag, format, params, story, source, n = 0) {
   return { ...base, question, options: opts, answer, reveal: opts.find((o) => o.id === answer).text }
 }
 
-export function templateItem(tag, format, n = 0) {
-  return buildItem(tag, format, templateParams(tag, n), '', 'template', n)
+export function templateItem(tag, format, n = 0, seen = []) {
+  return buildItem(tag, format, unseenParams(tag, templateParams(tag, n), seen, n), '', 'template', n)
 }
 
+const GENERIC = ['faster', 'speed', 'velocity', 'constant', 'same', 'equal', 'opposite', 'different bod', 'accelerat', 'mass', 'weight', 'force', 'inertia', 'friction', 'keeps']
 // Keyword grader used when the AI is unavailable (and as a sanity net). Lenient on wording.
 export function gradeLocal(text, rubric, tag) {
   const t = (text || '').toLowerCase().trim()
   if (t.length < 3) return { correct: false, tag: null, feedback: 'Try writing one or two sentences about what you expect and why.' }
   const hit = Object.entries(rubric.cues || {}).find(([, cs]) => cs.some((c) => t.includes(c) && !t.includes(`not ${c}`) && !t.includes(`n't ${c}`)))
-  const kw = (rubric.keywords || []).filter((k) => t.includes(k)).length
+  // Generic physics words too: the AI-down fallback must not fail correct answers that use everyday wording.
+  const kw = [...(rubric.keywords || []), ...GENERIC].filter((k) => t.includes(k)).length
   const correct = !hit && kw >= 1
   return {
     correct, tag: correct ? null : (hit?.[0] || tag || null),
@@ -123,7 +158,7 @@ export function gradeLocal(text, rubric, tag) {
 export function newState(law, demo) {
   const tags = LAW_TAGS[law]
   const st = { law, phase: 'A', strikes: Object.fromEntries(tags.map((t) => [t, 0])), gate: Object.fromEntries(tags.map((t) => [t, 0])),
-    streak: 0, explained: {}, aCount: 0, bIdx: 0, nextTag: null, nextFormat: null, lastTag: null, recapped: false, elapsed: 0, results: [] }
+    streak: 0, explained: {}, seen: [], aCount: 0, bIdx: 0, nextTag: null, nextFormat: null, lastTag: null, recapped: false, elapsed: 0, results: [] }
   if (demo === 'harder') st.streak = 1 // first first-try correct answer triggers HARDER
   if (demo === 'prereq') tags.forEach((t) => (st.strikes[t] = 1)) // first miss triggers PREREQ
   return st

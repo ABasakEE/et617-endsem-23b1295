@@ -17,11 +17,16 @@ Clock note: ~45 min left at the start of the build block. Priority = generated q
 - Latency fix: the next Phase A item is requested the moment an answer is submitted, so it generates while the learner watches the animation.
 - `/api/health` returns whether env vars are set (no values).
 
+- `/api/generate`, `/api/feedback`, `/api/grade` written by subagent; `scripts/test-api.mjs` ALL PASS locally against real Gemini (latency 6-9 s per call). Server timeout raised to 14 s (`AI_TIMEOUT_MS` overrides), client 16 s, `vercel.json` maxDuration 30. Why: at 8 s about 1 in 3 calls timed out.
+- Pushed (commit d03ed40). Live at https://et617-23b1295.vercel.app (alias added as a project domain; the first alias was deployment-only and sat behind Vercel Authentication, now fixed).
+- Live `/api/health` currently `hasKey:false` → env vars NOT set on Vercel yet, so live AI calls fall back.
+
 ## Doing now
-- Subagent finishing `/api/generate`, `/api/feedback`, `/api/grade` + `scripts/test-api.mjs`.
+- Waiting on user: set Vercel env vars + redeploy (steps below). Then test live end to end.
 
 ## Next
-- Review/run API tests, commit + push (Vercel auto-deploys), set Vercel env vars (see below), test live end-to-end.
+- Live test: generate/feedback/grade through the deployed site, full session click-through in browser, mobile-width sanity.
+- Check Vercel Deployment Protection is OFF for production (evaluator must reach the site without login).
 - Phase B items are single-attempt (no retry loop); Phase A has hint + one retry. Known simplification.
 
 ## Notes
